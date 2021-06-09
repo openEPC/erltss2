@@ -1,0 +1,12 @@
+{application,erltss2,
+    [{description,"An Erlang binding for tmp2-tss Fapi"},
+        {vsn,"git"},
+        {registered,[]},
+        {env,[]},
+        {mod, { erlfapi, []}},
+        {applications,[kernel,
+            stdlib
+        ]},
+        %% hex.pm packaging:
+        {links, [{"Github", "dummy"}]}
+    ]}.
