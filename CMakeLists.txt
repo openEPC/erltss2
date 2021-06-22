@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.15)
 project(tpm2_erltss VERSION 0.1 DESCRIPTION "tpm2-tss fapi erlang wrapper")
 set(CMAKE_CXX_STANDARD 11)
 
