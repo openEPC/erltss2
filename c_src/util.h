@@ -14,10 +14,10 @@ ERL_NIF_TERM Success(ErlNifEnv *env);
 ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms);
 
 template <typename T>
-ERL_NIF_TERM Error(ErlNifEnv *env, T &val);
+ERL_NIF_TERM Error(ErlNifEnv *env, T val);
 
 template <>
-ERL_NIF_TERM Error<std::uint32_t>(ErlNifEnv *env, std::uint32_t &val);
+ERL_NIF_TERM Error<std::uint32_t>(ErlNifEnv *env, std::uint32_t val);
 
 template <>
-ERL_NIF_TERM Error<std::string>(ErlNifEnv *env, std::string &val);
+ERL_NIF_TERM Error<const char*>(ErlNifEnv *env, const char *val);

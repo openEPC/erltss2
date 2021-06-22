@@ -25,7 +25,7 @@ static ErlNifFunc nif_funcs[] = {
         {"fapi_CreateKey", 4, NFapi_CreateKey},
         {"fapi_Sign", 3, NFapi_Sign},
         {"fapi_VerifySignature", 5, NFapi_VerifySignature},
-        {"fapi_EDCHZGen", 3, NFAPI_ECDHZGen},
+        {"fapi_ECDHZGen", 3, NFAPI_ECDHZGen},
         {"fapi_GetPublicKeyECC", 1, NFAPI_GetPublicKeyECC}
 };
 

@@ -31,13 +31,13 @@ ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms) {
 }
 
 template<>
-ERL_NIF_TERM Error<std::uint32_t>(ErlNifEnv *env, uint32_t &val) {
+ERL_NIF_TERM Error<std::uint32_t>(ErlNifEnv *env, uint32_t val) {
     return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_uint(env, val));
 }
 
 template<>
-ERL_NIF_TERM Error<std::string>(ErlNifEnv *env, std::string &val) {
-    return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_atom(env, val.c_str()));
+ERL_NIF_TERM Error<const char*>(ErlNifEnv *env, const char *val) {
+    return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_atom(env, val));
 }
 
 
