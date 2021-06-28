@@ -3,10 +3,8 @@
         {vsn,"git"},
         {registered,[]},
         {env,[]},
-        {mod, { erlfapi, []}},
-        {applications,[kernel,
-            stdlib
-        ]},
+        {modules, []},
+        {applications,[kernel, stdlib]},
         %% hex.pm packaging:
         {links, [{"Github", "dummy"}]}
     ]}.

@@ -105,7 +105,7 @@ ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     size_t signature_sz;
     char *public_key;
     char *certificate;
-    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, digest.size, &signature, &signature_sz, &public_key, &certificate);
+    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, 32, &signature, &signature_sz, &public_key, &certificate);
     free(key_path);
     free(padding);
 

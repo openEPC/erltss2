@@ -9,6 +9,7 @@ find_library(FAPI_LIB NAMES tss2-fapi)
 find_library(MU_LIB NAMES tss2-mu)
 find_library(ESYS_LIB NAMES tss2-esys)
 
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
 add_library(erlfapi SHARED c_src/erlfapi.cpp c_src/erlfapi.h c_src/util.h c_src/util.cpp)
 
 target_link_libraries(erlfapi tss2-fapi ${FAPI_LIB})

@@ -11,7 +11,20 @@
 -on_load(init/0).
 
 init() ->
-  ok = erlang:load_nif("liberlfapi", 0).
+  SoName = case code:priv_dir(erltss2) of
+             {error, bad_name} ->
+               erlang:display("_______________bad_name______________"),
+               case filelib:is_dir(filename:join(["..", priv])) of
+                 true ->
+                   filename:join(["..", priv, ?MODULE]);
+                 false ->
+                   filename:join([priv, ?MODULE])
+               end;
+             Dir ->
+               erlang:display("_______________success______________"),
+               filename:join(Dir, ?MODULE)
+           end,
+  ok = erlang:load_nif(SoName, 0).
 
 
 fapi_Initialize(_) ->
