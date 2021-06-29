@@ -88,6 +88,25 @@ ERL_NIF_TERM NFapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv)
         return Error(env, result);
 }
 
+ERL_NIF_TERM NFapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(argc < 1)
+        return Error(env, "too_few_args");
+
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    char* path = GetString(env, argv[0]);
+
+    TSS2_RC result = Fapi_Delete(FapiContext, path);
+
+    free(path);
+
+    if(result == TSS2_RC_SUCCESS)
+        return Success(env);
+    else
+        return Error(env, result);
+}
+
 ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(argc < 3)
         return Error(env, "too_few_args");
@@ -100,12 +119,14 @@ ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     char* key_path = GetString(env, argv[0]);
     char* padding = GetString(env, argv[1]);
     ErlNifBinary digest;
-    enif_term_to_binary(env, argv[2], &digest);
+    int is_binary = enif_inspect_binary(env, argv[2], &digest);
+    if(!is_binary)
+        return Error(env, "digest is not binary");
     uint8_t *signature;
     size_t signature_sz;
     char *public_key;
     char *certificate;
-    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, 32, &signature, &signature_sz, &public_key, &certificate);
+    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, digest.size, &signature, &signature_sz, &public_key, &certificate);
     free(key_path);
     free(padding);
 
@@ -128,7 +149,7 @@ ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
 }
 
 ERL_NIF_TERM NFapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(argc < 5)
+    if(argc < 3)
         return Error(env, "too_few_args");
 
     if(FapiContext == nullptr)
@@ -137,9 +158,13 @@ ERL_NIF_TERM NFapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM 
     TSS2_RC result;
     char* key_path = GetString(env, argv[0]);
     ErlNifBinary digest;
-    enif_term_to_binary(env, argv[2], &digest);
+    int is_binary = enif_inspect_binary(env, argv[1], &digest);
+    if(!is_binary)
+        return Error(env, "digest is not binary");
     ErlNifBinary signature;
-    enif_term_to_binary(env, argv[3], &signature);
+    is_binary = enif_inspect_binary(env, argv[2], &signature);
+    if(!is_binary)
+        return Error(env, "signature is not binary");
 
     result = Fapi_VerifySignature(FapiContext, key_path, digest.data, digest.size, signature.data, signature.size);
 
@@ -164,9 +189,13 @@ ERL_NIF_TERM NFAPI_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) 
 
     char* key_path = GetString(env, argv[0]);
     ErlNifBinary pub_point_x;
-    enif_term_to_binary(env, argv[1], &pub_point_x);
+    int is_binary = enif_inspect_binary(env, argv[1], &pub_point_x);
+    if(!is_binary)
+        return Error(env, "x point is not binary");
     ErlNifBinary pub_point_y;
-    enif_term_to_binary(env, argv[2], &pub_point_y);
+    is_binary = enif_inspect_binary(env, argv[2], &pub_point_y);
+    if(!is_binary)
+        return Error(env, "y point is not binary");
 
     if(pub_point_x.size > 128 || pub_point_y.size > 128)
         return Error(env, "key_too_long");
