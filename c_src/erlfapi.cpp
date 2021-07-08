@@ -5,6 +5,7 @@
 #include <tss2/tss2_mu.h>
 #include <tss2/tss2_esys.h>
 #include <tss2/tss2_fapi.h>
+#include <tss2/tss2_rc.h>
 
 #include "util.h"
 
@@ -330,5 +331,36 @@ ERL_NIF_TERM NFAPI_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM 
 error:
     Esys_Finalize(&esys_ctx);
     return Error(env, result);
+}
+
+ERL_NIF_TERM NFAPI_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(argc < 1)
+        return Error(env, "too_few_args");
+    TSS2_RC return_code;
+    enif_get_uint(env, argv[0], &return_code);
+
+    const char *decoded = Tss2_RC_Decode(return_code);
+    return Success(env, {enif_make_string(env, decoded, ERL_NIF_LATIN1)});
+}
+
+ERL_NIF_TERM NFAPI_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(argc < 1)
+        return Error(env, "too_few_args");
+
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    char *path = GetString(env, argv[0]);
+    char *pathList;
+
+    TSS2_RC result = Fapi_List(FapiContext, path, &pathList);
+
+    if(result != TSS2_RC_SUCCESS)
+        return Error(env, result);
+
+    ERL_NIF_TERM path_term = enif_make_string(env, pathList, ERL_NIF_LATIN1);
+    delete[] pathList;
+
+    return Success(env, {path_term});
 }
 

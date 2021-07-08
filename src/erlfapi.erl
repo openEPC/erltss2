@@ -6,7 +6,8 @@
 -module(erlfapi).
 
 %% API
--export([fapi_Initialize/1, fapi_Finalize/0, fapi_Provision/3, fapi_CreateKey/4, fapi_Delete/1, fapi_Sign/3, fapi_VerifySignature/3, fapi_ECDHZGen/3, fapi_GetPublicKeyECC/1]).
+-export([fapi_Initialize/1, fapi_Finalize/0, fapi_Provision/3, fapi_CreateKey/4, fapi_Delete/1,
+        fapi_Sign/3, fapi_VerifySignature/3, fapi_ECDHZGen/3, fapi_GetPublicKeyECC/1, fapi_RCDecode/1, fapi_List/1]).
 
 -on_load(init/0).
 
@@ -44,4 +45,8 @@ fapi_VerifySignature(_KeyPath,_Digest,_Signature) ->
 fapi_ECDHZGen(_KeyPath,_X,_Y) ->
   exit(nif_library_not_loaded).
 fapi_GetPublicKeyECC(_KeyPath) ->
+  exit(nif_library_not_loaded).
+fapi_RCDecode(_ResponseCode) ->
+  exit(nif_library_not_loaded).
+fapi_List(_Path) ->
   exit(nif_library_not_loaded).
