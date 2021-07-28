@@ -11,7 +11,9 @@ char* GetString(ErlNifEnv *env, ERL_NIF_TERM term);
 
 ERL_NIF_TERM Success(ErlNifEnv *env);
 
-ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms);
+ERL_NIF_TERM Success(ErlNifEnv *env, ERL_NIF_TERM term);
+
+ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms, bool homegeneous);
 
 template <typename T>
 ERL_NIF_TERM Error(ErlNifEnv *env, T val);

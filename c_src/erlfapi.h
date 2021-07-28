@@ -2,40 +2,43 @@
 
 #include <erl_nif.h>
 
-static ERL_NIF_TERM NFapi_Initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_Initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_Finalize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_Finalize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_Provision(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_Provision(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_CreateKey(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_CreateKey(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_Delete(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_Delete(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_Sign(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_Sign(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFapi_VerifySignature(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_VerifySignature(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM NFAPI_ECDHZGen(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv* env, int argc, const ERL_NIF_TERM *argv);
 
-static ERL_NIF_TERM NFAPI_GetPublicKeyECC(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv* env, int argc, const ERL_NIF_TERM *argv);
 
-static ERL_NIF_TERM NFAPI_RCDecode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_RCDecode(ErlNifEnv* env, int argc, const ERL_NIF_TERM *argv);
 
-static ERL_NIF_TERM NFAPI_List(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM Fapi_List(ErlNifEnv* env, int argc, const ERL_NIF_TERM *argv);
+
+static ERL_NIF_TERM Fapi_GetTcti(ErlNifEnv* env, int argc, const ERL_NIF_TERM *argv);
 
 static ErlNifFunc nif_funcs[] = {
-        {"fapi_Initialize", 1, NFapi_Initialize},
-        {"fapi_Finalize", 0, NFapi_Finalize},
-        {"fapi_Provision", 3, NFapi_Provision},
-        {"fapi_CreateKey", 4, NFapi_CreateKey},
-        {"fapi_Delete", 1, NFapi_Delete},
-        {"fapi_Sign", 3, NFapi_Sign},
-        {"fapi_VerifySignature", 3, NFapi_VerifySignature},
-        {"fapi_ECDHZGen", 3, NFAPI_ECDHZGen},
-        {"fapi_GetPublicKeyECC", 1, NFAPI_GetPublicKeyECC},
-        {"fapi_RCDecode", 1, NFAPI_RCDecode},
-        {"fapi_List", 1, NFAPI_List}
+        {"initialize", 1,         Fapi_Initialize},
+        {"finalize", 0,           Fapi_Finalize},
+        {"provision", 3,          Fapi_Provision},
+        {"create_key", 4,         Fapi_CreateKey},
+        {"delete", 1,             Fapi_Delete},
+        {"sign", 3,               Fapi_Sign},
+        {"verify_signature", 3,   Fapi_VerifySignature},
+        {"ecdh_zgen", 3,          Fapi_ECDHZGen},
+        {"get_public_key_ecc", 1, Fapi_GetPublicKeyECC},
+        {"rc_decode", 1,          Fapi_RCDecode},
+        {"list", 1,               Fapi_List},
+        {"get_tcti", 0,           Fapi_GetTcti}
 };
 
 ERL_NIF_INIT(erlfapi, nif_funcs, NULL, NULL, NULL, NULL)

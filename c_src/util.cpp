@@ -25,9 +25,15 @@ ERL_NIF_TERM Success(ErlNifEnv *env) {
     return enif_make_atom(env, "ok");
 }
 
-ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms) {
-    terms.insert(terms.begin(), enif_make_atom(env, "ok"));
-    return enif_make_tuple_from_array(env, terms.data(), terms.size());
+ERL_NIF_TERM Success(ErlNifEnv *env, ERL_NIF_TERM term) {
+    return enif_make_tuple2(env, enif_make_atom(env, "ok"), term);
+}
+
+ERL_NIF_TERM Success(ErlNifEnv *env, std::vector<ERL_NIF_TERM> terms, bool homegeneous) {
+    if(homegeneous)
+        return enif_make_tuple2(env, enif_make_atom(env, "ok"), enif_make_list_from_array(env, terms.data(), terms.size()));
+    else
+        return enif_make_tuple2(env, enif_make_atom(env, "ok"), enif_make_tuple_from_array(env, terms.data(), terms.size()));
 }
 
 template<>
@@ -39,6 +45,8 @@ template<>
 ERL_NIF_TERM Error<const char*>(ErlNifEnv *env, const char *val) {
     return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_atom(env, val));
 }
+
+
 
 
 

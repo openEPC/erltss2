@@ -11,7 +11,7 @@
 
 FAPI_CONTEXT *FapiContext = nullptr;
 
-ERL_NIF_TERM NFapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 1)
         return Error(env, "too_few_args");
 
@@ -31,7 +31,7 @@ ERL_NIF_TERM NFapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv
     }
 }
 
-ERL_NIF_TERM NFapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     (void)argc;
     (void)argv;
 
@@ -43,7 +43,7 @@ ERL_NIF_TERM NFapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) 
     return Success(env);
 }
 
-ERL_NIF_TERM NFapi_Provision(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Provision(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 3)
         return Error(env, "too_few_args");
 
@@ -64,7 +64,7 @@ ERL_NIF_TERM NFapi_Provision(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv)
         return Error(env, result);
 }
 
-ERL_NIF_TERM NFapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 4)
         return Error(env, "too_few_args");
 
@@ -89,7 +89,7 @@ ERL_NIF_TERM NFapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv)
         return Error(env, result);
 }
 
-ERL_NIF_TERM NFapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 1)
         return Error(env, "too_few_args");
 
@@ -108,7 +108,7 @@ ERL_NIF_TERM NFapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
         return Error(env, result);
 }
 
-ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 3)
         return Error(env, "too_few_args");
 
@@ -142,14 +142,12 @@ ERL_NIF_TERM NFapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     ERL_NIF_TERM certificate_term = enif_make_string(env, certificate, ERL_NIF_LATIN1);
     free(certificate);
     if(result == TSS2_RC_SUCCESS)
-        return Success(env, {signature_term,
-                            public_key_term,
-                            certificate_term});
+        return Success(env, {signature_term, public_key_term, certificate_term}, false);
     else
         return Error(env, result);
 }
 
-ERL_NIF_TERM NFapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(argc < 3)
         return Error(env, "too_few_args");
 
@@ -177,7 +175,7 @@ ERL_NIF_TERM NFapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM 
         return Error(env, result);
 }
 
-ERL_NIF_TERM NFAPI_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(argc < 3)
         return Error(env, "too_few_args");
 
@@ -257,7 +255,7 @@ ERL_NIF_TERM NFAPI_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) 
 
     Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
-    return Success(env, {secret_x_term, secret_y_term});
+    return Success(env, {secret_x_term, secret_y_term}, true);
 
 error:
     if(esys_key_handle != -1)
@@ -266,7 +264,7 @@ error:
     return Error(env, result);
 }
 
-ERL_NIF_TERM NFAPI_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(argc < 1)
         return Error(env, "too_few_args");
 
@@ -329,7 +327,7 @@ ERL_NIF_TERM NFAPI_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM 
 
     Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
-    return Success(env, {public_key_term});
+    return Success(env, public_key_term);
 
 error:
     if(esys_key_handle != -1)
@@ -338,17 +336,17 @@ error:
     return Error(env, result);
 }
 
-ERL_NIF_TERM NFAPI_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(argc < 1)
         return Error(env, "too_few_args");
     TSS2_RC return_code;
     enif_get_uint(env, argv[0], &return_code);
 
     const char *decoded = Tss2_RC_Decode(return_code);
-    return Success(env, {enif_make_string(env, decoded, ERL_NIF_LATIN1)});
+    return Success(env, enif_make_string(env, decoded, ERL_NIF_LATIN1));
 }
 
-ERL_NIF_TERM NFAPI_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(argc < 1)
         return Error(env, "too_few_args");
 
@@ -366,6 +364,19 @@ ERL_NIF_TERM NFAPI_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     ERL_NIF_TERM path_term = enif_make_string(env, pathList, ERL_NIF_LATIN1);
     delete[] pathList;
 
-    return Success(env, {path_term});
+    return Success(env, path_term);
+}
+
+ERL_NIF_TERM Fapi_GetTcti(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    TSS2_TCTI_CONTEXT *tcti_ctx;
+    TSS2_RC result = Fapi_GetTcti(FapiContext, &tcti_ctx);
+
+    if(result != TSS2_RC_SUCCESS)
+        return Error(env, result);
+
+    return Success(env, enif_make_uint64(env, reinterpret_cast<std::uint64_t>(tcti_ctx)));
 }
 

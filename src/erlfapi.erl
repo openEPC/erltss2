@@ -6,8 +6,9 @@
 -module(erlfapi).
 
 %% API
--export([fapi_Initialize/1, fapi_Finalize/0, fapi_Provision/3, fapi_CreateKey/4, fapi_Delete/1,
-        fapi_Sign/3, fapi_VerifySignature/3, fapi_ECDHZGen/3, fapi_GetPublicKeyECC/1, fapi_RCDecode/1, fapi_List/1]).
+-export([initialize/1, finalize/0, provision/3, create_key/4, delete/1,
+        sign/3, verify_signature/3, ecdh_zgen/3, get_public_key_ecc/1, rc_decode/1,
+        list/1, get_tcti/0]).
 
 -on_load(init/0).
 
@@ -28,25 +29,27 @@ init() ->
   ok = erlang:load_nif(SoName, 0).
 
 
-fapi_Initialize(_Uri) ->
+initialize(_Uri) ->
   exit(nif_library_not_loaded).
-fapi_Finalize() ->
+finalize() ->
   exit(nif_library_not_loaded).
-fapi_Provision(_AuthE,_AuthS,_AuthLock) ->
+provision(_AuthE,_AuthS,_AuthLock) ->
   exit(nif_library_not_loaded).
-fapi_CreateKey(_Path,_Type,_PolicyPath,_Auth) ->
+create_key(_Path,_Type,_PolicyPath,_Auth) ->
   exit(nif_library_not_loaded).
-fapi_Delete(_Path) ->
+delete(_Path) ->
   exit(nif_library_not_loaded).
-fapi_Sign(_KeyPath,_Padding,_Digest) ->
+sign(_KeyPath,_Padding,_Digest) ->
   exit(nif_library_not_loaded).
-fapi_VerifySignature(_KeyPath,_Digest,_Signature) ->
+verify_signature(_KeyPath,_Digest,_Signature) ->
   exit(nif_library_not_loaded).
-fapi_ECDHZGen(_KeyPath,_X,_Y) ->
+ecdh_zgen(_KeyPath,_X,_Y) ->
   exit(nif_library_not_loaded).
-fapi_GetPublicKeyECC(_KeyPath) ->
+get_public_key_ecc(_KeyPath) ->
   exit(nif_library_not_loaded).
-fapi_RCDecode(_ResponseCode) ->
+rc_decode(_ResponseCode) ->
   exit(nif_library_not_loaded).
-fapi_List(_Path) ->
+list(_Path) ->
+  exit(nif_library_not_loaded).
+get_tcti() ->
   exit(nif_library_not_loaded).
