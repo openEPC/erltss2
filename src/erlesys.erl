@@ -6,7 +6,7 @@
 -module(erlesys).
 
 %% API
--export([initialize/1, finalize/0, get_capability/6, evict_control/6, tr_from_tpm_public/4]).
+-export([evict_control/6, finalize/0, get_capability/6, initialize/1, tr_from_tpm_public/4]).
 
 -on_load(init/0).
 
@@ -26,19 +26,13 @@ init() ->
              end,
     ok = erlang:load_nif(SoName, 0).
 
-
-
-initialize(_Tcti) ->
-    erlang:error(not_implemented).
-
-finalize() ->
-    erlang:error(not_implemented).
-
-get_capability(_SHandle1, _SHandle2, _SHandle3, _Capability, _Property, _PropertyCount) ->
-    erlang:error(not_implemented).
-
 evict_control(_Auth, _Handle, _SHandle1, _SHandle2, _SHandle3, _PersistentHandle) ->
     erlang:error(not_implemented).
-
+finalize() ->
+    erlang:error(not_implemented).
+get_capability(_SHandle1, _SHandle2, _SHandle3, _Capability, _Property, _PropertyCount) ->
+    erlang:error(not_implemented).
+initialize(_Tcti) ->
+    erlang:error(not_implemented).
 tr_from_tpm_public(_Handle, _SHandle1, _SHandle2, _SHandle3) ->
     erlang:error(not_implemented).

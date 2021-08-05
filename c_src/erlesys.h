@@ -2,21 +2,21 @@
 
 #include <erl_nif.h>
 
+static ERL_NIF_TERM Esys_EvictControl(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+
+static ERL_NIF_TERM Esys_Finalize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+
+static ERL_NIF_TERM Esys_GetCapability(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+
 static ERL_NIF_TERM Esys_Initialize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
 static ERL_NIF_TERM Esys_TR_FromTPMPublic(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 
-static ERL_NIF_TERM Esys_Finalize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-
-static ERL_NIF_TERM Esys_EvictControl(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-
-static ERL_NIF_TERM Esys_GetCapability(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-
 static ErlNifFunc nif_funcs[] = {
-        {"initialize", 1,    Esys_Initialize},
+        {"evict_control", 6,  Esys_EvictControl},
         {"finalize", 0,      Esys_Finalize},
         {"get_capability", 6, Esys_GetCapability},
-        {"evict_control", 6,  Esys_EvictControl},
+        {"initialize", 1,    Esys_Initialize},
         {"tr_from_tpm_public", 4, Esys_TR_FromTPMPublic}
 };
 

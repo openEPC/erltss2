@@ -11,63 +11,7 @@
 
 FAPI_CONTEXT *FapiContext = nullptr;
 
-ERL_NIF_TERM Fapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 1)
-        return Error(env, "too_few_args");
-
-    char* uri = GetString(env, argv[0]);
-
-    TSS2_RC result;
-    FAPI_CONTEXT *fapi_ctx;
-    result = Fapi_Initialize(&fapi_ctx, uri);
-    free(uri);
-
-    if(result == TSS2_RC_SUCCESS) {
-        FapiContext = fapi_ctx;
-        return Success(env);
-    }
-    else{
-        return Error(env, result);
-    }
-}
-
-ERL_NIF_TERM Fapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    (void)argc;
-    (void)argv;
-
-    if(FapiContext == nullptr)
-        return Error(env, "no_context");
-
-    Fapi_Finalize(&FapiContext);
-    FapiContext = nullptr;
-    return Success(env);
-}
-
-ERL_NIF_TERM Fapi_Provision(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 3)
-        return Error(env, "too_few_args");
-
-    if(FapiContext == nullptr)
-        return Error(env, "no_context");
-
-    char* auth_e = GetString(env, argv[0]);
-    char* auth_s = GetString(env, argv[1]);
-    char* auth_lock = GetString(env, argv[2]);
-    TSS2_RC result = Fapi_Provision(FapiContext, auth_e, auth_s, auth_lock);
-    free(auth_e);
-    free(auth_s);
-    free(auth_lock);
-
-    if(result == TSS2_RC_SUCCESS)
-        return Success(env);
-    else
-        return Error(env, result);
-}
-
 ERL_NIF_TERM Fapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 4)
-        return Error(env, "too_few_args");
-
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -90,9 +34,6 @@ ERL_NIF_TERM Fapi_CreateKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 }
 
 ERL_NIF_TERM Fapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 1)
-        return Error(env, "too_few_args");
-
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -108,77 +49,7 @@ ERL_NIF_TERM Fapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
         return Error(env, result);
 }
 
-ERL_NIF_TERM Fapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 3)
-        return Error(env, "too_few_args");
-
-    if(FapiContext == nullptr)
-        return Error(env, "no_context");
-
-    TSS2_RC result;
-
-    char* key_path = GetString(env, argv[0]);
-    char* padding = GetString(env, argv[1]);
-    ErlNifBinary digest;
-    int is_binary = enif_inspect_binary(env, argv[2], &digest);
-    if(!is_binary)
-        return Error(env, "digest is not binary");
-    uint8_t *signature;
-    size_t signature_sz;
-    char *public_key;
-    char *certificate;
-    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, digest.size, &signature, &signature_sz, &public_key, &certificate);
-    free(key_path);
-    free(padding);
-
-    enif_release_binary(&digest);
-    ERL_NIF_TERM signature_term;
-    unsigned char *erl_signature = enif_make_new_binary(env, signature_sz, &signature_term);
-    memcpy(erl_signature, signature, signature_sz);
-    free(signature);
-
-    ERL_NIF_TERM public_key_term = enif_make_string(env, public_key, ERL_NIF_LATIN1);
-    free(public_key);
-    ERL_NIF_TERM certificate_term = enif_make_string(env, certificate, ERL_NIF_LATIN1);
-    free(certificate);
-    if(result == TSS2_RC_SUCCESS)
-        return Success(env, {signature_term, public_key_term, certificate_term}, false);
-    else
-        return Error(env, result);
-}
-
-ERL_NIF_TERM Fapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-    if(argc < 3)
-        return Error(env, "too_few_args");
-
-    if(FapiContext == nullptr)
-        return Error(env, "no_context");
-
-    TSS2_RC result;
-    char* key_path = GetString(env, argv[0]);
-    ErlNifBinary digest;
-    int is_binary = enif_inspect_binary(env, argv[1], &digest);
-    if(!is_binary)
-        return Error(env, "digest is not binary");
-    ErlNifBinary signature;
-    is_binary = enif_inspect_binary(env, argv[2], &signature);
-    if(!is_binary)
-        return Error(env, "signature is not binary");
-
-    result = Fapi_VerifySignature(FapiContext, key_path, digest.data, digest.size, signature.data, signature.size);
-
-    free(key_path);
-
-    if(result == TSS2_RC_SUCCESS)
-        return Success(env);
-    else
-        return Error(env, result);
-}
-
 ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(argc < 3)
-        return Error(env, "too_few_args");
-
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -257,7 +128,7 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     Esys_Finalize(&esys_ctx);
     return Success(env, {secret_x_term, secret_y_term}, true);
 
-error:
+    error:
     if(esys_key_handle != -1)
         Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
@@ -265,9 +136,6 @@ error:
 }
 
 ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(argc < 1)
-        return Error(env, "too_few_args");
-
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -329,27 +197,56 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     Esys_Finalize(&esys_ctx);
     return Success(env, public_key_term);
 
-error:
+    error:
     if(esys_key_handle != -1)
         Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
     return Error(env, result);
 }
 
-ERL_NIF_TERM Fapi_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(argc < 1)
-        return Error(env, "too_few_args");
-    TSS2_RC return_code;
-    enif_get_uint(env, argv[0], &return_code);
+ERL_NIF_TERM Fapi_GetTcti(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
 
-    const char *decoded = Tss2_RC_Decode(return_code);
-    return Success(env, enif_make_string(env, decoded, ERL_NIF_LATIN1));
+    TSS2_TCTI_CONTEXT *tcti_ctx;
+    TSS2_RC result = Fapi_GetTcti(FapiContext, &tcti_ctx);
+
+    if(result != TSS2_RC_SUCCESS)
+        return Error(env, result);
+
+    return Success(env, enif_make_uint64(env, reinterpret_cast<std::uint64_t>(tcti_ctx)));
+}
+
+ERL_NIF_TERM Fapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    char* uri = GetString(env, argv[0]);
+
+    TSS2_RC result;
+    FAPI_CONTEXT *fapi_ctx;
+    result = Fapi_Initialize(&fapi_ctx, uri);
+    free(uri);
+
+    if(result == TSS2_RC_SUCCESS) {
+        FapiContext = fapi_ctx;
+        return Success(env);
+    }
+    else{
+        return Error(env, result);
+    }
+}
+
+ERL_NIF_TERM Fapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    (void)argc;
+    (void)argv;
+
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    Fapi_Finalize(&FapiContext);
+    FapiContext = nullptr;
+    return Success(env);
 }
 
 ERL_NIF_TERM Fapi_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(argc < 1)
-        return Error(env, "too_few_args");
-
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -367,16 +264,89 @@ ERL_NIF_TERM Fapi_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     return Success(env, path_term);
 }
 
-ERL_NIF_TERM Fapi_GetTcti(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+ERL_NIF_TERM Fapi_Provision(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
-    TSS2_TCTI_CONTEXT *tcti_ctx;
-    TSS2_RC result = Fapi_GetTcti(FapiContext, &tcti_ctx);
+    char* auth_e = GetString(env, argv[0]);
+    char* auth_s = GetString(env, argv[1]);
+    char* auth_lock = GetString(env, argv[2]);
+    TSS2_RC result = Fapi_Provision(FapiContext, auth_e, auth_s, auth_lock);
+    free(auth_e);
+    free(auth_s);
+    free(auth_lock);
 
-    if(result != TSS2_RC_SUCCESS)
+    if(result == TSS2_RC_SUCCESS)
+        return Success(env);
+    else
         return Error(env, result);
-
-    return Success(env, enif_make_uint64(env, reinterpret_cast<std::uint64_t>(tcti_ctx)));
 }
 
+ERL_NIF_TERM Fapi_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    TSS2_RC return_code;
+    enif_get_uint(env, argv[0], &return_code);
+
+    const char *decoded = Tss2_RC_Decode(return_code);
+    return Success(env, enif_make_string(env, decoded, ERL_NIF_LATIN1));
+}
+
+ERL_NIF_TERM Fapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    TSS2_RC result;
+
+    char* key_path = GetString(env, argv[0]);
+    char* padding = GetString(env, argv[1]);
+    ErlNifBinary digest;
+    int is_binary = enif_inspect_binary(env, argv[2], &digest);
+    if(!is_binary)
+        return Error(env, "digest is not binary");
+    uint8_t *signature;
+    size_t signature_sz;
+    char *public_key;
+    char *certificate;
+    result = Fapi_Sign(FapiContext, key_path, padding, digest.data, digest.size, &signature, &signature_sz, &public_key, &certificate);
+    free(key_path);
+    free(padding);
+
+    enif_release_binary(&digest);
+    ERL_NIF_TERM signature_term;
+    unsigned char *erl_signature = enif_make_new_binary(env, signature_sz, &signature_term);
+    memcpy(erl_signature, signature, signature_sz);
+    free(signature);
+
+    ERL_NIF_TERM public_key_term = enif_make_string(env, public_key, ERL_NIF_LATIN1);
+    free(public_key);
+    ERL_NIF_TERM certificate_term = enif_make_string(env, certificate, ERL_NIF_LATIN1);
+    free(certificate);
+    if(result == TSS2_RC_SUCCESS)
+        return Success(env, {signature_term, public_key_term, certificate_term}, false);
+    else
+        return Error(env, result);
+}
+
+ERL_NIF_TERM Fapi_VerifySignature(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    if(FapiContext == nullptr)
+        return Error(env, "no_context");
+
+    TSS2_RC result;
+    char* key_path = GetString(env, argv[0]);
+    ErlNifBinary digest;
+    int is_binary = enif_inspect_binary(env, argv[1], &digest);
+    if(!is_binary)
+        return Error(env, "digest is not binary");
+    ErlNifBinary signature;
+    is_binary = enif_inspect_binary(env, argv[2], &signature);
+    if(!is_binary)
+        return Error(env, "signature is not binary");
+
+    result = Fapi_VerifySignature(FapiContext, key_path, digest.data, digest.size, signature.data, signature.size);
+
+    free(key_path);
+
+    if(result == TSS2_RC_SUCCESS)
+        return Success(env);
+    else
+        return Error(env, result);
+}

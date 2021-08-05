@@ -8,19 +8,27 @@
 
 ESYS_CONTEXT *EsysContext = nullptr;
 
-ERL_NIF_TERM Esys_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    TSS2_TCTI_CONTEXT *tcti_ctx;
-    enif_get_uint64(env, argv[0], reinterpret_cast<std::uint64_t*>(&tcti_ctx));
-    ESYS_CONTEXT *esys_ctx = nullptr;
-    TSS2_RC result = Esys_Initialize(&esys_ctx, tcti_ctx, NULL);
+ERL_NIF_TERM Esys_EvictControl(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    if(EsysContext == nullptr)
+        return Error(env, "no_context");
 
-    if(result == TSS2_RC_SUCCESS) {
-        EsysContext = esys_ctx;
-        return Success(env);
-    }
-    else{
-        return Error(env, result);
-    }
+    ESYS_TR auth;
+    enif_get_uint(env, argv[0], &auth);
+    TPM2_HANDLE esys_handle;
+    enif_get_uint(env, argv[1], &esys_handle);
+    ESYS_TR shandle1;
+    enif_get_uint(env, argv[2], &shandle1);
+    ESYS_TR shandle2;
+    enif_get_uint(env, argv[3], &shandle2);
+    ESYS_TR shandle3;
+    enif_get_uint(env, argv[4], &shandle3);
+    ESYS_TR persistent_handle;
+    enif_get_uint(env, argv[5], &persistent_handle);
+
+    ESYS_TR new_handle;
+    Esys_EvictControl(EsysContext, auth, esys_handle, shandle1, shandle2, shandle3, persistent_handle, &new_handle);
+
+    return Success(env, enif_make_uint(env, new_handle));
 }
 
 ERL_NIF_TERM Esys_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
@@ -35,8 +43,7 @@ ERL_NIF_TERM Esys_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
 ERL_NIF_TERM Esys_GetCapability(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if(EsysContext == nullptr)
         return Error(env, "no_context");
-//ESYS_TR_NONE
-    //0xfffU
+
     ESYS_TR shandle1;
     enif_get_uint(env, argv[0], &shandle1);
     ESYS_TR shandle2;
@@ -67,27 +74,19 @@ ERL_NIF_TERM Esys_GetCapability(ErlNifEnv *env, int argc, const ERL_NIF_TERM *ar
     return Success(env, handles, true);
 }
 
-ERL_NIF_TERM Esys_EvictControl(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
-    if(EsysContext == nullptr)
-        return Error(env, "no_context");
+ERL_NIF_TERM Esys_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    TSS2_TCTI_CONTEXT *tcti_ctx;
+    enif_get_uint64(env, argv[0], reinterpret_cast<std::uint64_t*>(&tcti_ctx));
+    ESYS_CONTEXT *esys_ctx = nullptr;
+    TSS2_RC result = Esys_Initialize(&esys_ctx, tcti_ctx, NULL);
 
-    ESYS_TR auth;
-    enif_get_uint(env, argv[0], &auth);
-    TPM2_HANDLE esys_handle;
-    enif_get_uint(env, argv[1], &esys_handle);
-    ESYS_TR shandle1;
-    enif_get_uint(env, argv[2], &shandle1);
-    ESYS_TR shandle2;
-    enif_get_uint(env, argv[3], &shandle2);
-    ESYS_TR shandle3;
-    enif_get_uint(env, argv[4], &shandle3);
-    ESYS_TR persistent_handle;
-    enif_get_uint(env, argv[5], &persistent_handle);
-
-    ESYS_TR new_handle;
-    Esys_EvictControl(EsysContext, auth, esys_handle, shandle1, shandle2, shandle3, persistent_handle, &new_handle);
-
-    return Success(env, enif_make_uint(env, new_handle));
+    if(result == TSS2_RC_SUCCESS) {
+        EsysContext = esys_ctx;
+        return Success(env);
+    }
+    else{
+        return Error(env, result);
+    }
 }
 
 ERL_NIF_TERM Esys_TR_FromTPMPublic(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
