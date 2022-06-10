@@ -50,6 +50,7 @@ ERL_NIF_TERM Fapi_Delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
 }
 
 ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    fprintf(stderr, "Fapi_ECDHZGen\n");
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -78,30 +79,41 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     size_t blob_sz;
     size_t offset = 0;
     result = Fapi_GetEsysBlob(FapiContext, key_path, &type, &esys_blob, &blob_sz);
+    fprintf(stderr, "Fapi_GetEsysBlob: %d\n", result);
     free(key_path);
     if(result != TSS2_RC_SUCCESS)
         goto error;
 
-    if (type != FAPI_ESYSBLOB_CONTEXTLOAD)
-        return Error(env, "wrong_key_path");
+    if (type == FAPI_ESYSBLOB_CONTEXTLOAD) {
+        fprintf(stderr, "Fapi_GetEsysBlob: contextload\n");
+        TPMS_CONTEXT key_context;
+        result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
+        fprintf(stderr, "TPMS_CONTEXT_Unmarshal: %d\n", result);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
-    TPMS_CONTEXT key_context;
-    result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
+        TSS2_TCTI_CONTEXT *tcti_ctx;
+        result = Fapi_GetTcti(FapiContext, &tcti_ctx);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
-    TSS2_TCTI_CONTEXT *tcti_ctx;
-    result = Fapi_GetTcti(FapiContext, &tcti_ctx);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
+        result = Esys_Initialize(&esys_ctx, tcti_ctx, nullptr);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
-    result = Esys_Initialize(&esys_ctx, tcti_ctx, nullptr);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
-
-    result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
+        result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
+        fprintf(stderr, "Esys_ContextLoad: %d\n", result);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+    }
+    else {
+        fprintf(stderr, "Fapi_GetEsysBlob: deserialize\n");
+        result = Esys_TR_Deserialize(esys_ctx, esys_blob, blob_sz, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS) {
+            fprintf(stderr, "Error deserializing blob: %s\n", Tss2_RC_Decode(result));
+            return result;
+        }
+    }
 
     TPM2B_ECC_POINT *secret;
     TPM2B_ECC_POINT pub_point;
@@ -112,6 +124,7 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     pub_point.size = pub_point.point.x.size + pub_point.point.y.size;
 
     result = Esys_ECDH_ZGen(esys_ctx, esys_key_handle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, &pub_point, &secret);
+    fprintf(stderr, "Esys_ECDH_ZGen: %d\n", result);
     enif_release_binary(&pub_point_x);
     enif_release_binary(&pub_point_y);
     if (result != TSS2_RC_SUCCESS)
@@ -125,17 +138,22 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     memcpy(erl_secret_y, secret->point.y.buffer, secret->point.y.size);
 
     Esys_FlushContext(esys_ctx, esys_key_handle);
+    fprintf(stderr, "Esys_FlushContext\n");
     Esys_Finalize(&esys_ctx);
     return Success(env, {secret_x_term, secret_y_term}, true);
 
     error:
-    if(esys_key_handle != -1)
+    if(esys_key_handle != -1 && type == FAPI_ESYSBLOB_CONTEXTLOAD) {
         Esys_FlushContext(esys_ctx, esys_key_handle);
+        fprintf(stderr, "Esys_FlushContext2\n");
+    }
     Esys_Finalize(&esys_ctx);
+    fprintf(stderr, "Esys_Finalize\n");
     return Error(env, result);
 }
 
 ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    fprintf(stderr, "Fapi_GetPublicKeyECC\n");
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -153,38 +171,47 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     size_t blob_sz;
     size_t offset = 0;
     result = Fapi_GetEsysBlob(FapiContext, key_path, &type, &esys_blob, &blob_sz);
+    fprintf(stderr, "Fapi_GetEsysBlob: %d\n", result);
     free(key_path);
     if(result != TSS2_RC_SUCCESS)
         goto error;
 
-    if (type != FAPI_ESYSBLOB_CONTEXTLOAD)
-        return Error(env, "wrong_key_path");
+    if (type == FAPI_ESYSBLOB_CONTEXTLOAD) {
+        fprintf(stderr, "Fapi_GetEsysBlob: contextload\n");
+        TPMS_CONTEXT key_context;
+        result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
+        fprintf(stderr, "TPMS_CONTEXT_Unmarshal: %d\n", result);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
+        TSS2_TCTI_CONTEXT *tcti_ctx;
+        result = Fapi_GetTcti(FapiContext, &tcti_ctx);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
-    TPMS_CONTEXT key_context;
+        result = Esys_Initialize(&esys_ctx, tcti_ctx, nullptr);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
 
-    result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
-
-    TSS2_TCTI_CONTEXT *tcti_ctx;
-    result = Fapi_GetTcti(FapiContext, &tcti_ctx);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
-
-    result = Esys_Initialize(&esys_ctx, tcti_ctx, nullptr);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
-
-    result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
-    if (result != TSS2_RC_SUCCESS)
-        goto error;
+        result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
+        fprintf(stderr, "Esys_ContextLoad: %d\n", result);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+    }
+    else {
+        fprintf(stderr, "Fapi_GetEsysBlob: deserialize\n");
+        result = Esys_TR_Deserialize(esys_ctx, esys_blob, blob_sz, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS) {
+            fprintf(stderr, "Error deserializing blob: %s\n", Tss2_RC_Decode(result));
+            return result;
+        }
+    }
 
     TPM2B_PUBLIC *public_part;
     TPM2B_NAME *public_name;
     TPM2B_NAME *qualif_name;
     Esys_ReadPublic(esys_ctx, esys_key_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &public_part, &public_name, &qualif_name);
-
+    fprintf(stderr, "Esys_ReadPublic: %d\n", result);
     ecc_point = &public_part->publicArea.unique.ecc;
 
     ERL_NIF_TERM public_key_term;
@@ -194,13 +221,18 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     memcpy(erl_public_key + ecc_point->x.size + 1, ecc_point->y.buffer, ecc_point->y.size);
 
     Esys_FlushContext(esys_ctx, esys_key_handle);
+    fprintf(stderr, "Esys_FlushContext\n");
     Esys_Finalize(&esys_ctx);
+    fprintf(stderr, "Esys_Finalize\n");
     return Success(env, public_key_term);
 
     error:
-    if(esys_key_handle != -1)
+    if(esys_key_handle != -1) {
         Esys_FlushContext(esys_ctx, esys_key_handle);
+        fprintf(stderr, "Esys_FlushContext2\n");
+    }
     Esys_Finalize(&esys_ctx);
+    fprintf(stderr, "Esys_Finalize\n");
     return Error(env, result);
 }
 
@@ -218,11 +250,14 @@ ERL_NIF_TERM Fapi_GetTcti(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
 }
 
 ERL_NIF_TERM Fapi_Initialize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    fprintf(stderr, "Fapi_Initialize\n");
     char* uri = GetString(env, argv[0]);
 
     TSS2_RC result;
     FAPI_CONTEXT *fapi_ctx;
     result = Fapi_Initialize(&fapi_ctx, uri);
+    fprintf(stderr, "Fapi_Initialize: %d\n", result);
+
     free(uri);
 
     if(result == TSS2_RC_SUCCESS) {
@@ -247,6 +282,7 @@ ERL_NIF_TERM Fapi_Finalize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) 
 }
 
 ERL_NIF_TERM Fapi_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
+    fprintf(stderr, "Fapi_List\n");
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -254,6 +290,7 @@ ERL_NIF_TERM Fapi_List(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     char *pathList;
 
     TSS2_RC result = Fapi_List(FapiContext, path, &pathList);
+    fprintf(stderr, "Fapi_List: %d\n", result);
 
     if(result != TSS2_RC_SUCCESS)
         return Error(env, result);
@@ -291,6 +328,7 @@ ERL_NIF_TERM Fapi_RCDecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
 }
 
 ERL_NIF_TERM Fapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    fprintf(stderr, "Fapi_Sign\n");
     if(FapiContext == nullptr)
         return Error(env, "no_context");
 
@@ -307,6 +345,7 @@ ERL_NIF_TERM Fapi_Sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     char *public_key;
     char *certificate;
     result = Fapi_Sign(FapiContext, key_path, padding, digest.data, digest.size, &signature, &signature_sz, &public_key, &certificate);
+    fprintf(stderr, "Fapi_Sign: %d\n", result);
     free(key_path);
     free(padding);
 
