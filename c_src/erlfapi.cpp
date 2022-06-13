@@ -73,21 +73,13 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     TSS2_RC result;
     ESYS_TR esys_key_handle = -1;
 
-    uint8_t type;
+    uint8_t blob_type;
     uint8_t *esys_blob;
     size_t blob_sz;
     size_t offset = 0;
-    result = Fapi_GetEsysBlob(FapiContext, key_path, &type, &esys_blob, &blob_sz);
+    result = Fapi_GetEsysBlob(FapiContext, key_path, &blob_type, &esys_blob, &blob_sz);
     free(key_path);
     if(result != TSS2_RC_SUCCESS)
-        goto error;
-
-    if (type != FAPI_ESYSBLOB_CONTEXTLOAD)
-        return Error(env, "wrong_key_path");
-
-    TPMS_CONTEXT key_context;
-    result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
-    if (result != TSS2_RC_SUCCESS)
         goto error;
 
     TSS2_TCTI_CONTEXT *tcti_ctx;
@@ -99,9 +91,26 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     if (result != TSS2_RC_SUCCESS)
         goto error;
 
-    result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
-    if (result != TSS2_RC_SUCCESS)
+    if (blob_type == FAPI_ESYSBLOB_CONTEXTLOAD) {
+        TPMS_CONTEXT key_context;
+        result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+
+        result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+    }
+    else if (blob_type == FAPI_ESYSBLOB_DESERIALIZE){
+        result = Esys_TR_Deserialize(esys_ctx, esys_blob, blob_sz, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS) {
+            return result;
+        }
+    }
+    else {
+        fprintf(stderr, "Fapi_GetEsysBlob: unknown type\n");
         goto error;
+    }
 
     TPM2B_ECC_POINT *secret;
     TPM2B_ECC_POINT pub_point;
@@ -124,12 +133,13 @@ ERL_NIF_TERM Fapi_ECDHZGen(ErlNifEnv *env, int argc, const ERL_NIF_TERM *argv) {
     erl_secret_y = enif_make_new_binary(env, secret->point.y.size, &secret_y_term);
     memcpy(erl_secret_y, secret->point.y.buffer, secret->point.y.size);
 
-    Esys_FlushContext(esys_ctx, esys_key_handle);
+    if(blob_type == FAPI_ESYSBLOB_CONTEXTLOAD)
+        Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
     return Success(env, {secret_x_term, secret_y_term}, true);
 
     error:
-    if(esys_key_handle != -1)
+    if(esys_key_handle != -1 && blob_type == FAPI_ESYSBLOB_CONTEXTLOAD)
         Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
     return Error(env, result);
@@ -148,23 +158,13 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     TSS2_RC result;
     ESYS_TR esys_key_handle = -1;
 
-    uint8_t type;
+    uint8_t blob_type;
     uint8_t *esys_blob;
     size_t blob_sz;
     size_t offset = 0;
-    result = Fapi_GetEsysBlob(FapiContext, key_path, &type, &esys_blob, &blob_sz);
+    result = Fapi_GetEsysBlob(FapiContext, key_path, &blob_type, &esys_blob, &blob_sz);
     free(key_path);
     if(result != TSS2_RC_SUCCESS)
-        goto error;
-
-    if (type != FAPI_ESYSBLOB_CONTEXTLOAD)
-        return Error(env, "wrong_key_path");
-
-
-    TPMS_CONTEXT key_context;
-
-    result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
-    if (result != TSS2_RC_SUCCESS)
         goto error;
 
     TSS2_TCTI_CONTEXT *tcti_ctx;
@@ -176,9 +176,26 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     if (result != TSS2_RC_SUCCESS)
         goto error;
 
-    result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
-    if (result != TSS2_RC_SUCCESS)
+    if (blob_type == FAPI_ESYSBLOB_CONTEXTLOAD) {
+        TPMS_CONTEXT key_context;
+        result = Tss2_MU_TPMS_CONTEXT_Unmarshal(esys_blob, blob_sz, &offset, &key_context);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+
+        result = Esys_ContextLoad(esys_ctx, &key_context, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS)
+            goto error;
+    }
+    else if (blob_type == FAPI_ESYSBLOB_DESERIALIZE){
+        result = Esys_TR_Deserialize(esys_ctx, esys_blob, blob_sz, &esys_key_handle);
+        if (result != TSS2_RC_SUCCESS) {
+            return result;
+        }
+    }
+    else {
+        fprintf(stderr, "Fapi_GetEsysBlob: unknown type\n");
         goto error;
+    }
 
     TPM2B_PUBLIC *public_part;
     TPM2B_NAME *public_name;
@@ -193,12 +210,13 @@ ERL_NIF_TERM Fapi_GetPublicKeyECC(ErlNifEnv *env, int argc, const ERL_NIF_TERM *
     memcpy(erl_public_key + 1, ecc_point->x.buffer, ecc_point->x.size);
     memcpy(erl_public_key + ecc_point->x.size + 1, ecc_point->y.buffer, ecc_point->y.size);
 
+    if(blob_type == FAPI_ESYSBLOB_CONTEXTLOAD)
     Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
     return Success(env, public_key_term);
 
     error:
-    if(esys_key_handle != -1)
+    if(esys_key_handle != -1 && blob_type == FAPI_ESYSBLOB_CONTEXTLOAD)
         Esys_FlushContext(esys_ctx, esys_key_handle);
     Esys_Finalize(&esys_ctx);
     return Error(env, result);
