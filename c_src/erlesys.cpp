@@ -60,7 +60,7 @@ ERL_NIF_TERM Esys_GetCapability(ErlNifEnv *env, int argc, const ERL_NIF_TERM *ar
     TPMI_YES_NO more_data;
     TPMS_CAPABILITY_DATA *cap_data;
 
-    TSS2_RC result = Esys_GetCapability(EsysContext, shandle1, shandle2, shandle3, TPM2_CAP_HANDLES, TPM2_PERSISTENT_FIRST, TPM2_MAX_CAP_HANDLES, &more_data, &cap_data);
+    TSS2_RC result = Esys_GetCapability(EsysContext, shandle1, shandle2, shandle3, capability, property, property_cnt, &more_data, &cap_data);
 
     if(result != TSS2_RC_SUCCESS)
         return Error(env, result);
